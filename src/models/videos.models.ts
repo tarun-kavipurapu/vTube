@@ -1,5 +1,8 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, mongo } from "mongoose";
 import { Ivideo } from "./modelTypes.js";
+
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
+
 const videoSchema:Schema<Ivideo> = new Schema(
   {
     videoFile: {
@@ -40,5 +43,7 @@ const videoSchema:Schema<Ivideo> = new Schema(
     timestamps: true,
   }
 );
+
+videoSchema.plugin(mongooseAggregatePaginate);
 
 const Video = mongoose.model<Ivideo>("Video", videoSchema);
