@@ -5,7 +5,7 @@ const asyncHandler = (
   fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
 ) => async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await fn(req, res, next);
+   return  await fn(req, res, next);
   } catch (error: any) {
    
       res.status(error.code|| 500).json({
@@ -15,3 +15,5 @@ const asyncHandler = (
   
   }
 };
+
+export default asyncHandler;
