@@ -1,9 +1,16 @@
 import { Request, Response, NextFunction } from "express";
+// const asyncHandler = (requestHandler) => {
+//   return (req:Request, res:Response, next:NextFunction) => {
+//       Promise.resolve(requestHandler(req, res, next)).catch((err) => next(err))
+//   }
+// }
 
-// Higher-order functions are functions that take a function as an argument and return a function
-const asyncHandler = (
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
-) => async (req: Request, res: Response, next: NextFunction) => {
+
+// export { asyncHandler }
+
+
+// // Higher-order functions are functions that take a function as an argument and return a function
+const asyncHandler = (fn: Function) => async (req: Request, res: Response, next: NextFunction) => {
   try {
    return  await fn(req, res, next);
   } catch (error: any) {
@@ -16,4 +23,4 @@ const asyncHandler = (
   }
 };
 
-export default asyncHandler;
+export  {asyncHandler};

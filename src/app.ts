@@ -15,5 +15,5 @@ app.use(express.static("public"));
 
 ///import Router
 import userRoutes from './routes/user.routes.js'
-app.use('/users',userRoutes)
+app.use('/api/v1/users',userRoutes)
 export default app;

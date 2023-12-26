@@ -70,7 +70,7 @@ userSchema.pre("save",async function(next: NextFunction) {
     next(err);
   }
 });
-//something significant to note over her is that here we are writing functions but not arrwo functions becuase normal functions give us acess to this keyboard rather unlike the arrwo fucntions  
+//something significant to note over her is that here we are writing functions but not arrwo functions becuase normal functions give us acess to this keyword rather unlike the arrwo fucntions  
 userSchema.methods.comparePassword=async function(password:string){
 return await bcrypt.compare(password,this.password);
 }
@@ -105,4 +105,4 @@ jwt.sign(
   }
   )
 } 
-const User = mongoose.model<IUser>("User", userSchema);
+export const User = mongoose.model<IUser>("User", userSchema);

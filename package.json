@@ -7,8 +7,7 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "build": "npx tsc",
-    "dev": "npx tsc -w",
-    "server": "nodemon dist/index.js"
+    "dev": "npx tsc -w & nodemon dist/index.js"
   },
   "keywords": [],
   "author": "",
