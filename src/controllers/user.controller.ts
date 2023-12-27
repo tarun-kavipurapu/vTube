@@ -244,4 +244,27 @@ const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
   )
 });
 
+
+const changeUserPassword = asyncHandler(async(req: IGetUserAuthInfoRequest, res: Response)=>{
+  const {oldPassword,newPassword}  = req.body; 
+const user = await User.findById(req.user._id);
+
+
+if(!user){
+  throw new ApiError(401,"")
+}
+const isPasswordCorrect = user.comparePassword(oldPassword);
+
+if(!isPasswordCorrect){
+  throw new ApiError(401,"Your old password is invalid");
+}
+user.password  = newPassword;//there is no need to ahsh the passord as it is taken care of userschema.pre functionn we designed in usermodel which hashes before the saving 
+
+await user.save({validateBeforeSave:true});
+
+return res.status(200).json(
+  new ApiResponse(200,"Password changed Sucessfully")
+)
+});
+
 export { registerUser, loginUser, logoutUser ,refreshAccessToken };

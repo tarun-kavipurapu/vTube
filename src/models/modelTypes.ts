@@ -23,3 +23,7 @@ export interface Ivideo extends Document{
    views: number;
    isPublished: boolean;
 }
+export interface Isubsctibe extends Document{
+   subscriber:Schema.Types.ObjectId;
+   channel:Schema.Types.ObjectId;
+}
