@@ -6,26 +6,32 @@ import { cloudinaryFileUpload } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Request, Response, NextFunction } from "express";
 import { IUser } from "../models/modelTypes.js";
+import jwt from "jsonwebtoken";
 
 export interface IGetUserAuthInfoRequest extends Request {
   user: any; // or any other type
 }
 import { Types } from "mongoose";
+import { JsonWebTokenError } from "jsonwebtoken";
 const generateRefreshandAcessToken = async (userId: Types.ObjectId) => {
-  const user = await User.findById(userId);
-
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
-
-  const accessToken = user.generateAccessToken();
-  const refreshToken = user.generateRefreshToken() || "";
-
-  user.refreshToken = refreshToken;
-
-  await user.save({ validateBeforeSave: false });
-
-  return { accessToken, refreshToken };
+ try {
+   const user = await User.findById(userId);
+ 
+   if (!user) {
+     throw new ApiError(404, "User not found");
+   }
+ 
+   const accessToken = user.generateAccessToken();
+   const refreshToken = user.generateRefreshToken() || "";
+ 
+   user.refreshToken = refreshToken;
+ 
+   await user.save({ validateBeforeSave: false });
+ 
+   return { accessToken, refreshToken };
+ } catch (error) {
+    throw new ApiError(500,"Something went wrong while generating Refresh and Acess tokens")
+ }
 };
 
 const registerUser = asyncHandler(async (req: Request, res: Response) => {
@@ -144,7 +150,7 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
   const { accessToken, refreshToken } = await generateRefreshandAcessToken(
     user._id
   );
-  console.log(accessToken,refreshToken);
+  console.log(accessToken, refreshToken);
 
   //either we can update the user object to new user object which containns refresh token or we can just perform database query again decision should be made according to the expensive ness of the operation
 
@@ -177,8 +183,11 @@ const logoutUser = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response, next: NextFunction) => {
     const user = req.user;
 
-    await User.findByIdAndUpdate(user._id, { $set: { refreshToken: undefined } },{new:true});
-
+    await User.findByIdAndUpdate(
+      user._id,
+      { $set: { refreshToken: undefined } },
+      { new: true }
+    );
 
     const options = {
       httpOnly: true, //makign cookies not moodifiable at the froont end side
@@ -186,10 +195,53 @@ const logoutUser = asyncHandler(
     };
 
     return res
-    .status(200)
-    .clearCookie("accessToken",options)
-    .clearCookie("refreshToken",options)
-    .json(new ApiResponse(200, "Sucessfully logout"));
+      .status(200)
+      .clearCookie("accessToken", options)
+      .clearCookie("refreshToken", options)
+      .json(new ApiResponse(200, "Sucessfully logout"));
   }
 );
-export { registerUser, loginUser, logoutUser };
+
+const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
+  const refreshTokenFromUser =
+    req.cookies.refreshToken || req.body.refreshToken;
+
+  if (!refreshTokenFromUser) {
+    throw new ApiError(401, "Refresh tokenn not provided");
+  }
+  const decodedObject = jwt.verify(
+    refreshTokenFromUser,
+    process.env.REFRESH_TOKEN_SECRET
+  ); //this is payload section in generate jwt section
+
+  const user = await User.findById(decodedObject._id);
+  if (!user) {
+    throw new ApiError(401, "Invalid Refresh Token");
+  }
+  //comparing refresh token
+  if (user.refreshToken != refreshTokenFromUser) {
+    throw new ApiError(401, "Invalid refresh token from user Non authorizable");
+  }
+  //since refresh token is true then generate acess token and send to frontend
+  const { accessToken:newAccessToken, refreshToken:newRefreshToken } = await generateRefreshandAcessToken(user._id);
+
+  const options = {
+    httpOnly: true, //makign cookies not moodifiable at the froont end side
+    secure: true,
+  };
+
+  
+  res
+  .status(200)
+  .cookie("accessToken",newAccessToken,options)
+  .cookie("refreshToken",newRefreshToken,options)
+  .json(
+    new ApiResponse(200,{
+      newRefreshToken,newAccessToken
+    },
+    "New set of token created"
+    )
+  )
+});
+
+export { registerUser, loginUser, logoutUser ,refreshAccessToken };
