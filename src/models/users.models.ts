@@ -72,7 +72,7 @@ userSchema.pre("save",async function(next: NextFunction) {
 });
 //something significant to note over her is that here we are writing functions but not arrwo functions becuase normal functions give us acess to this keyword rather unlike the arrwo fucntions  
 userSchema.methods.comparePassword=async function(password:string){
-return await bcrypt.compare(password,this.password);
+  return await bcrypt.compare(password,this.password);
 }
 
 userSchema.methods.generateAccessToken= function(){
@@ -83,7 +83,7 @@ email:this.email,
 fullname:this.fullname
 }
 
-jwt.sign(
+return jwt.sign(
   payload,
   process.env.ACCESS_TOKEN_SECRET||"default value",
   {
@@ -97,7 +97,7 @@ _id:this._id,
 
 }
 
-jwt.sign(
+return jwt.sign(
   payload,
   process.env.REFRESH_TOKEN_SECRET||"default value",
   {

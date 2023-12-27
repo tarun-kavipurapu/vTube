@@ -8,7 +8,10 @@ export interface IUser extends Document{
    avatar:string,
    coverImage?:string,
    watchHistory?:Schema.Types.ObjectId[],
-   refreshToken?:string;
+   refreshToken:string;
+   comparePassword(candidatePassword: string): Promise<boolean>;
+   generateAccessToken():any,
+   generateRefreshToken():any
 }
 export interface Ivideo extends Document{
    videoFile: string;

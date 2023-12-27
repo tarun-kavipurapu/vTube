@@ -20,13 +20,7 @@ cloudinary.config({
     // file has been uploaded successfull
     console.log("file is uploaded on cloudinary ", response.url);
     // console.log(response.url);
-    fs.unlink(localFilePath, (err) => {//remove from local repo after upload
-      if (err) {
-        console.error(err);
-        return;
-      }
-      // console.log('File Unlinked from local Repository successfully');
-    });
+    fs.unlinkSync(localFilePath);
     return response;
   } 
   catch (error) {
