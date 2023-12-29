@@ -14,24 +14,27 @@ export interface IGetUserAuthInfoRequest extends Request {
 import { Types } from "mongoose";
 import { JsonWebTokenError } from "jsonwebtoken";
 const generateRefreshandAcessToken = async (userId: Types.ObjectId) => {
- try {
-   const user = await User.findById(userId);
- 
-   if (!user) {
-     throw new ApiError(404, "User not found");
-   }
- 
-   const accessToken = user.generateAccessToken();
-   const refreshToken = user.generateRefreshToken() || "";
- 
-   user.refreshToken = refreshToken;
- 
-   await user.save({ validateBeforeSave: false });
- 
-   return { accessToken, refreshToken };
- } catch (error) {
-    throw new ApiError(500,"Something went wrong while generating Refresh and Acess tokens")
- }
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken() || "";
+
+    user.refreshToken = refreshToken;
+
+    await user.save({ validateBeforeSave: false });
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "Something went wrong while generating Refresh and Acess tokens"
+    );
+  }
 };
 
 const registerUser = asyncHandler(async (req: Request, res: Response) => {
@@ -61,8 +64,8 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
   }
   // console.log("control here");
 
-  req.files as { [fieldname: string]: Express.Multer.File[] };
-  console.log(req);
+  // req.files as { [fieldname: string]: Express.Multer.File[] };
+  // console.log(req);
   const avatarLocalPath = (
     req.files as { [fieldname: string]: Express.Multer.File[] }
   )?.avatar[0]?.path;
@@ -223,48 +226,159 @@ const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(401, "Invalid refresh token from user Non authorizable");
   }
   //since refresh token is true then generate acess token and send to frontend
-  const { accessToken:newAccessToken, refreshToken:newRefreshToken } = await generateRefreshandAcessToken(user._id);
+  const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+    await generateRefreshandAcessToken(user._id);
 
   const options = {
     httpOnly: true, //makign cookies not moodifiable at the froont end side
     secure: true,
   };
 
-  
   res
-  .status(200)
-  .cookie("accessToken",newAccessToken,options)
-  .cookie("refreshToken",newRefreshToken,options)
-  .json(
-    new ApiResponse(200,{
-      newRefreshToken,newAccessToken
-    },
-    "New set of token created"
-    )
-  )
+    .status(200)
+    .cookie("accessToken", newAccessToken, options)
+    .cookie("refreshToken", newRefreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          newRefreshToken,
+          newAccessToken,
+        },
+        "New set of token created"
+      )
+    );
 });
 
+const changeUserPassword = asyncHandler(
+  async (req: IGetUserAuthInfoRequest, res: Response) => {
+    const { oldPassword, newPassword } = req.body;
+    const user = await User.findById(req.user._id);
 
-const changeUserPassword = asyncHandler(async(req: IGetUserAuthInfoRequest, res: Response)=>{
-  const {oldPassword,newPassword}  = req.body; 
-const user = await User.findById(req.user._id);
+    if (!user) {
+      throw new ApiError(401, "");
+    }
+    const isPasswordCorrect = user.comparePassword(oldPassword);
 
+    if (!isPasswordCorrect) {
+      throw new ApiError(401, "Your old password is invalid");
+    }
+    user.password = newPassword; //there is no need to ahsh the passord as it is taken care of userschema.pre functionn we designed in usermodel which hashes before the saving
 
-if(!user){
-  throw new ApiError(401,"")
-}
-const isPasswordCorrect = user.comparePassword(oldPassword);
+    await user.save({ validateBeforeSave: true });
 
-if(!isPasswordCorrect){
-  throw new ApiError(401,"Your old password is invalid");
-}
-user.password  = newPassword;//there is no need to ahsh the passord as it is taken care of userschema.pre functionn we designed in usermodel which hashes before the saving 
+    return res
+      .status(200)
+      .json(new ApiResponse(200, "Password changed Sucessfully"));
+  }
+);
 
-await user.save({validateBeforeSave:true});
+const getCurrentUser = asyncHandler(
+  async (req: IGetUserAuthInfoRequest, res: Response) => {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, req.user, "Current User Info"));
+  }
+);
 
-return res.status(200).json(
-  new ApiResponse(200,"Password changed Sucessfully")
-)
-});
+//if iamm updating a file like image it is usually better to make sepearte idate handler than text
+const updateAccountdetails = asyncHandler(
+  async (req: IGetUserAuthInfoRequest, res: Response) => {
+    const { newFullname, newEmail } = req.body;
 
-export { registerUser, loginUser, logoutUser ,refreshAccessToken };
+    if (!newEmail || !newFullname) {
+      throw new ApiError(400, "Please provide new email or fullname");
+    }
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $set: { email: newEmail, fullname: newFullname },
+      },
+      { new: true }
+    ).select("-password -refreshToken");
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, user, "Account details updated sucessfully"));
+  }
+);
+
+const updateUserAvatar = asyncHandler(
+  async (req: IGetUserAuthInfoRequest, res: Response) => {
+    //take the avatar from user
+    //upload it to mmulter in local path
+    //upload it to cloudinary
+    //replace the image url in database with new cloudinary url
+
+    const avatarLocalPath = (
+      req.files as { [fieldname: string]: Express.Multer.File[] }
+    )?.avatar[0]?.path;
+
+    const avatar = await cloudinaryFileUpload(avatarLocalPath);
+      //TODO:delete the previous avatar from cloudinary
+    if (!avatar) {
+      throw new ApiError(400, "Avatar File not available on multer");
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $set: { avatar: avatar.url },
+      },
+      { new: true }
+    ).select("-password -refreshToken");
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, user, "Avatar updated sucessfully"));
+  }
+);
+const updateUserCover = asyncHandler(
+  async (req: IGetUserAuthInfoRequest, res: Response) => {
+    //take the avatar from user
+    //upload it to mmulter in local path
+    //upload it to cloudinary
+    //replace the image url in database with new cloudinary url
+
+    const coverLocalPath = (
+      req.files as { [fieldname: string]: Express.Multer.File[] }
+    )?.avatar[0]?.path;
+
+    const coverImage = await cloudinaryFileUpload(coverLocalPath);
+      //TODO:delete the previous image from cloudinary
+
+    if (!coverImage) {
+      throw new ApiError(400, "coverImage File not available on multer");
+    }
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $set: { coverImage: coverImage.url },
+      },
+      { new: true }
+    ).select("-password -refreshToken");
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, user, "CoverImage updated sucessfully"));
+  }
+);
+
+// const getUserChannelProfile
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changeUserPassword,
+  getCurrentUser,
+  updateAccountdetails,
+  updateUserAvatar,
+  updateUserCover,
+};
+
+//need to test
+//refreshAccessToken
+//changePassword/
+//getCurrentUser
