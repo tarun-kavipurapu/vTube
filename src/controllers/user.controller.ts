@@ -7,6 +7,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Request, Response, NextFunction } from "express";
 import { IUser } from "../models/modelTypes.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 export interface IGetUserAuthInfoRequest extends Request {
   user: any; // or any other type
@@ -37,6 +38,7 @@ const generateRefreshandAcessToken = async (userId: Types.ObjectId) => {
   }
 };
 
+//tested
 const registerUser = asyncHandler(async (req: Request, res: Response) => {
   //get user detials from frontend
   //validate -->not empty
@@ -48,7 +50,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
   // check for user creation
   //result response
   const { username, password, email, fullname } = req.body;
-  console.log(email, password);
+  // console.log(email, password);
 
   if (
     [username, password, email, fullname].some((field) => field.trim() === "")
@@ -86,9 +88,8 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
   const avatar = await cloudinaryFileUpload(avatarLocalPath);
   const coverImage = await cloudinaryFileUpload(coverImageLocalPath);
 
-  console.log("control before user");
   if (!avatar) {
-    console.log("control here at end");
+    // console.log("control here at end");
     throw new ApiError(400, "IMage not uploaded on cloudinary");
   }
 
@@ -118,6 +119,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     .json(new ApiResponse(200, createdUser, "User registered Successfully"));
 });
 
+//tested
 const loginUser = asyncHandler(async (req: Request, res: Response) => {
   ///take from req->body
   //find user from db
@@ -315,7 +317,7 @@ const updateUserAvatar = asyncHandler(
     )?.avatar[0]?.path;
 
     const avatar = await cloudinaryFileUpload(avatarLocalPath);
-      //TODO:delete the previous avatar from cloudinary
+    //TODO:delete the previous avatar from cloudinary
     if (!avatar) {
       throw new ApiError(400, "Avatar File not available on multer");
     }
@@ -345,7 +347,7 @@ const updateUserCover = asyncHandler(
     )?.avatar[0]?.path;
 
     const coverImage = await cloudinaryFileUpload(coverLocalPath);
-      //TODO:delete the previous image from cloudinary
+    //TODO:delete the previous image from cloudinary
 
     if (!coverImage) {
       throw new ApiError(400, "coverImage File not available on multer");
@@ -364,7 +366,122 @@ const updateUserCover = asyncHandler(
   }
 );
 
-// const getUserChannelProfile
+//user chaneel profile info
+
+const getChannelProfile = asyncHandler(
+  async (req: IGetUserAuthInfoRequest, res: Response) => {
+    const { username } = req.params;
+    if (!username.trim()) {
+      throw new ApiError(400, "username Invalid");
+    }
+    const stats = await User.aggregate([
+      {
+        $match: {
+          username: username?.toLowerCase(),
+        },
+      },
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "subscriber",
+          as: "subcribers",
+        },
+        //people who subscribed
+      },
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "channel",
+          as: "subscribedTo",
+        },
+        //people i subscribed too
+      },
+      {
+        $addFields: {
+          subscribersCount: { $size: "$subscribers" },
+          subscribedToCount: { $size: "$subscribedTo" },
+          isSubscribed: {
+            $cond: {
+              if: { $in: [req?.user, "$subscribers.subscriber"] },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          fullname: 1,
+          username: 1,
+          subscribedToCount: 1,
+          subscribersCount: 1,
+          isSubscribed: 1,
+          avatar: 1,
+          coverImage: 1,
+        },
+      },
+    ]);
+    if (stats?.length == 0) {
+      throw new ApiError(400, "stats not found");
+    }
+
+    return res.status(200).json(new ApiResponse(200, stats[0]));
+  }
+);
+const getWatchHistory = asyncHandler(
+  async (req: IGetUserAuthInfoRequest, res: Response) => {
+    const user = User.aggregate([
+      {
+        $match: {
+          $id: new mongoose.Types.ObjectId(req.user._id),
+        },
+      },
+      {
+        $lookup: {
+          from: "videos",
+          localField: "watchHistory",
+          foreignField: "_id",
+          as: "watchHistory",
+          pipeline: [
+            {
+              $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                  {
+                    $project: {
+                      fullname: 1,
+                      username: 1,
+                      avatar: 1,
+                    },
+                  },
+                ],
+              },
+              $addFields: {
+                owner: {
+                  $first: "$owner",
+                },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          user[0].watchHistory,
+          "succesfully watch history obtained"
+        )
+      );
+  }
+);
 
 export {
   registerUser,
@@ -376,9 +493,6 @@ export {
   updateAccountdetails,
   updateUserAvatar,
   updateUserCover,
+  getChannelProfile,
+  getWatchHistory,
 };
-
-//need to test
-//refreshAccessToken
-//changePassword/
-//getCurrentUser
