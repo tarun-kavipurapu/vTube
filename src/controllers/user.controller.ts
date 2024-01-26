@@ -1,19 +1,15 @@
 import { asyncHandler } from "./../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import { User } from "../models/users.models.js";
-import { Express } from "express";
 import { cloudinaryFileUpload } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Request, Response, NextFunction } from "express";
-import { IUser } from "../models/modelTypes.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-
 export interface IGetUserAuthInfoRequest extends Request {
   user: any; // or any other type
 }
 import { Types } from "mongoose";
-import { JsonWebTokenError } from "jsonwebtoken";
 const generateRefreshandAcessToken = async (userId: Types.ObjectId) => {
   try {
     const user = await User.findById(userId);
@@ -372,8 +368,9 @@ const getChannelProfile = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
     const { username } = req.params;
     if (!username.trim()) {
-      throw new ApiError(400, "username Invalid");
+      throw new ApiError(400, "username missing");
     }
+
     const stats = await User.aggregate([
       {
         $match: {
@@ -384,8 +381,8 @@ const getChannelProfile = asyncHandler(
         $lookup: {
           from: "subscriptions",
           localField: "_id",
-          foreignField: "subscriber",
-          as: "subcribers",
+          foreignField: "channel",
+          as: "subscribers",
         },
         //people who subscribed
       },
@@ -393,7 +390,7 @@ const getChannelProfile = asyncHandler(
         $lookup: {
           from: "subscriptions",
           localField: "_id",
-          foreignField: "channel",
+          foreignField: "subscriber",
           as: "subscribedTo",
         },
         //people i subscribed too
@@ -423,11 +420,18 @@ const getChannelProfile = asyncHandler(
         },
       },
     ]);
-    if (stats?.length == 0) {
-      throw new ApiError(400, "stats not found");
-    }
 
-    return res.status(200).json(new ApiResponse(200, stats[0]));
+    console.log(stats);
+    if (!stats?.length) {
+      throw new ApiError(404, "stats not found");
+    }
+    const test = {};
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, stats[0], "User channel fetched successfully")
+      );
   }
 );
 const getWatchHistory = asyncHandler(

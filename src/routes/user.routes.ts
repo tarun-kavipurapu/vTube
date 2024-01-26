@@ -38,6 +38,6 @@ router
   .route("/update-cover")
   .patch(upload.single("coverImage"), verifyJWT, updateUserCover);
 
-router.route(`/profile/:username`).get(verifyJWT, getChannelProfile);
+router.route("/profile/:username").get(verifyJWT, getChannelProfile);
 router.route(`/history`).get(verifyJWT, getWatchHistory);
 export default router;
