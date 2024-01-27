@@ -25,11 +25,11 @@ router.route("/register").post(
   registerUser
 );
 
-router.route("/login").post(loginUser); //tested
-router.route("/logout").post(verifyJWT, logoutUser); //tested
+router.route("/login").post(loginUser); //!tested
+router.route("/logout").post(verifyJWT, logoutUser); //!tested
 router.route("/refresh-Token").post(refreshAccessToken);
-router.route("/change-password").post(verifyJWT, changeUserPassword); //tested
-router.route("/current-user").get(verifyJWT, getCurrentUser); //tested
+router.route("/change-password").post(verifyJWT, changeUserPassword); //!tested
+router.route("/current-user").get(verifyJWT, getCurrentUser); //!tested
 router.route("/update-account").patch(verifyJWT, updateAccountdetails);
 router
   .route("/update-avatar")
@@ -38,6 +38,6 @@ router
   .route("/update-cover")
   .patch(upload.single("coverImage"), verifyJWT, updateUserCover);
 
-router.route("/profile/:username").get(verifyJWT, getChannelProfile);
-router.route(`/history`).get(verifyJWT, getWatchHistory);
+router.route("/profile/:username").get(verifyJWT, getChannelProfile); //!tested
+router.route(`/history`).get(verifyJWT, getWatchHistory); //!tested
 export default router;

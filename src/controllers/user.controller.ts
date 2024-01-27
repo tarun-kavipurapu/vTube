@@ -151,7 +151,7 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
   const { accessToken, refreshToken } = await generateRefreshandAcessToken(
     user._id
   );
-  console.log(accessToken, refreshToken);
+  // console.log(accessToken, refreshToken);
 
   //either we can update the user object to new user object which containns refresh token or we can just perform database query again decision should be made according to the expensive ness of the operation
 
@@ -425,8 +425,6 @@ const getChannelProfile = asyncHandler(
     if (!stats?.length) {
       throw new ApiError(404, "stats not found");
     }
-    const test = {};
-
     return res
       .status(200)
       .json(
@@ -436,10 +434,10 @@ const getChannelProfile = asyncHandler(
 );
 const getWatchHistory = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
-    const user = User.aggregate([
+    const user = await User.aggregate([
       {
         $match: {
-          $id: new mongoose.Types.ObjectId(req.user._id),
+          _id: new mongoose.Types.ObjectId(req.user._id),
         },
       },
       {
@@ -458,13 +456,15 @@ const getWatchHistory = asyncHandler(
                 pipeline: [
                   {
                     $project: {
-                      fullname: 1,
+                      fullName: 1,
                       username: 1,
                       avatar: 1,
                     },
                   },
                 ],
               },
+            },
+            {
               $addFields: {
                 owner: {
                   $first: "$owner",
@@ -475,6 +475,10 @@ const getWatchHistory = asyncHandler(
         },
       },
     ]);
+    if (!user) {
+      throw new ApiError(500, "User not found ");
+    }
+    // console.log(user);
     return res
       .status(200)
       .json(
