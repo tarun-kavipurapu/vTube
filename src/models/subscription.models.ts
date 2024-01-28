@@ -2,14 +2,13 @@ import mongoose, { Schema, Document, Query, HydratedDocument } from "mongoose";
 import { Isubsctibe } from "./modelTypes.js";
 const subscriptionScheme: Schema<Isubsctibe> = new Schema(
   {
-    subscriber: 
-      {
-        type: Schema.Types.ObjectId,//one who is subscribing
-        ref: "User",
-      },
-    
+    subscriber: {
+      type: Schema.Types.ObjectId, //subscribedTo
+      ref: "User",
+    },
+
     channel: {
-      type: Schema.Types.ObjectId,//one whome to subscriber is subscribing
+      type: Schema.Types.ObjectId, //subscribers
       ref: "User",
     },
   },
@@ -18,4 +17,7 @@ const subscriptionScheme: Schema<Isubsctibe> = new Schema(
   }
 );
 
-export const Subscribe = mongoose.model<Isubsctibe>("Subscription",subscriptionScheme);
+export const Subscribe = mongoose.model<Isubsctibe>(
+  "Subscription",
+  subscriptionScheme
+);

@@ -86,7 +86,7 @@ const deleteComment = asyncHandler(
     if (comment?.owner.toString() !== req.user._id.toString()) {
       throw new ApiError(
         403,
-        "You don't have permission to update this comment!"
+        "You don't have permission to delete this comment!"
       );
     }
 

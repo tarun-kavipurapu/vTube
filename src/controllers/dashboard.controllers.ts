@@ -5,7 +5,15 @@ export interface IGetUserAuthInfoRequest extends Request {
   user: any; // or any other type
 }
 
-// const getChannelStats = asyncHandler(async(req:IGetUserAuthInfoRequest,res:Response){
-//     const user  = req.user._id;
+const getChannelStats = asyncHandler(
+  async (req: IGetUserAuthInfoRequest, res: Response) => {
+    const user = req.user._id;
+  }
+);
+const getChannelVideos = asyncHandler(
+  async (req: IGetUserAuthInfoRequest, res: Response) => {
+    const user = req.user._id;
+  }
+);
 
-// });
+export { getChannelStats, getChannelVideos };

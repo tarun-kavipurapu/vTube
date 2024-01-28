@@ -3,7 +3,7 @@ import { Ivideo } from "./modelTypes.js";
 
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
-const videoSchema:Schema<Ivideo> = new Schema(
+const videoSchema: Schema<Ivideo> = new Schema(
   {
     videoFile: {
       type: String, //cloudinary url
@@ -46,4 +46,4 @@ const videoSchema:Schema<Ivideo> = new Schema(
 
 videoSchema.plugin(mongooseAggregatePaginate);
 
-const Video = mongoose.model<Ivideo>("Video", videoSchema);
+export const Video = mongoose.model<Ivideo>("Video", videoSchema);
