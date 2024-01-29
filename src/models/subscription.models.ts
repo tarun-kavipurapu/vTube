@@ -12,6 +12,7 @@ const subscriptionScheme: Schema<Isubsctibe> = new Schema(
       ref: "User",
     },
   },
+  //subscriber subscribed too channel
   {
     timestamps: true,
   }

@@ -1,3 +1,4 @@
+import mongoose, { Mongoose } from "mongoose";
 import { Video } from "../models/videos.models.js";
 import ApiError from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -59,11 +60,22 @@ const updateThumbnail = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {}
 );
 const uploadVideo = asyncHandler(
-  async (req: IGetUserAuthInfoRequest, res: Response) => {}
+  async (req: IGetUserAuthInfoRequest, res: Response) => {
+    //takke video and thumbnail by muter
+    //and then upload the video to cloudinary then
+    //take that url of the cloudinary upload to video Db
+  }
 );
 const getAllVideos = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
-    const {};
+    // const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+    // const video = await Video.aggregate([
+    //   {
+    //     $match: {
+    //       owner: new mongoose.Types.ObjectId(userId),
+    //     },
+    //   },
+    // ]);
   }
 );
 const togglePublishStatus = asyncHandler(

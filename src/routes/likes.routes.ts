@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router = Router();
 
 //toglevideolike
@@ -6,7 +7,7 @@ const router = Router();
 //togglecomment
 //toggletweetlike
 //getLikedVideos
-
+router.use(verifyJWT);
 router.route("/l/:videoId").post();
 router.route("/l/:commentId").post();
 router.route("/l/:tweetId").post();
