@@ -8,7 +8,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { Request, Response } from "express";
 import ApiError from "../utils/ApiError.js";
 export interface IGetUserAuthInfoRequest extends Request {
-  user: any; // or any other type
+  user: any;
 }
 
 const toggleVideoLike = asyncHandler(
@@ -158,3 +158,5 @@ const getLikedVideos = asyncHandler(
       );
   }
 );
+
+export { toggleCommentLike, toggleTweetLike, toggleVideoLike, getLikedVideos };
