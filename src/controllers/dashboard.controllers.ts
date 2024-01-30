@@ -12,6 +12,12 @@ const getChannelStats = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
     const user = req.user._id;
   }
+
+  //channel stats what are involved are
+  //subscribes
+  //average likes in views
+  //subscribed percentage
+  //
 );
 const getChannelVideos = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
