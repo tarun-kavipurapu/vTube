@@ -138,7 +138,6 @@ const createPlaylist = asyncHandler(
     const { name, description } = req.body;
     if (!name || !description) {
       throw new ApiError(400, "Enter the name and description");
-    }
   }
 );
 const removeVideFromPlaylist = asyncHandler(
