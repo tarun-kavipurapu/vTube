@@ -1,5 +1,10 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import ApiError from "../utils/ApiError.js";
+import { Playlist } from "../models/playlists.models.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import mongoose from "mongoose";
+import { Video } from "../models/videos.models.js";
 
 export interface IGetUserAuthInfoRequest extends Request {
   user: any; // or any other type
@@ -7,12 +12,46 @@ export interface IGetUserAuthInfoRequest extends Request {
 
 const getPlayListById = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
-    const user = req.user._id;
+
+    const { playlistId } = req.params;
+    if (!playlistId) {
+      throw new ApiError(400, "playlist Id not given");
+    }
+
+    const playlist = await Playlist.findById(playlistId);
+
+    if (!playlist) {
+      throw new ApiError(500, "Playlsit not found in DB");
+    }
+    res
+      .status(200)
+      .json(new ApiResponse(200, playlist, "Playlist sucessfully retreived"));
   }
 );
 const deletePlaylist = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
-    const user = req.user._id;
+    const { playlistId } = req.params;
+    if (!playlistId) {
+      throw new ApiError(400, "playlist Id not given");
+    }
+
+    const playlist = await Playlist.findById(playlistId);
+
+    if (!playlist) {
+      throw new ApiError(500, "Playlsit not found in DB");
+    }
+    if(playlist?.owner!=req.user._id){
+      throw new ApiError(501,"You dont have authorization to delete the playlist");
+    }
+    const deletePlaylist = await Playlist.findByIdAndDelete(playlistId);
+
+    if(!deletePlaylist){
+      throw new ApiError(500,"Unable to delte Playllist");
+    }
+    res
+    .status(200)
+    .json(new ApiResponse(200, deletePlaylist, "Playlist sucessfully Deleted"));
+
   }
 );
 const updatePlaylist = asyncHandler(
@@ -24,12 +63,60 @@ const updatePlaylist = asyncHandler(
 const getUserPlaylists = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
     const user = req.user._id;
+    const {userId} = req.params;
+    if(!userId){
+      throw new ApiError(401,"Enter the userID")
+    }
+    const playlist = await Playlist.aggregate([
+      {
+        $match:{
+          owner: new mongoose.Types.ObjectId(req.user._id);
+        }
+      }
+    ])
+    if(!playlist){
+      throw new ApiError(500,"Could not find Playlist");
+    }
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, playlist, "Playlist sucessfully retreived"));
+      //TODO:may need to change return Playlist object
+  
   }
 );
 
 const addVideoToPlaylist = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
     const user = req.user._id;
+    const {playlistId} = req.params;
+    const {videoId} = req.params;
+    if(!playlistId||!videoId){
+      throw new ApiError(401,"You have not entered pplaylistId  or VideoId");
+    }
+    
+    // Check if the user owns the playlist
+    const playlist = await Playlist.findById( playlistId )
+
+    if (!playlist) {
+        throw new ApiError(404, "no playlist found!");
+    }
+
+    if (playlist.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, "You don't have permission to add video in this playlist!");
+    }
+
+    // find video in db
+    const video = await Video.findById( videoId )
+
+    if (!video) {
+        throw new ApiError(404, "no video found!");
+    }
+    if(playlist.videos.includes(videoId)){
+      throw new ApiError(400, "video already exists in this playlist!!");
+    }
+    
+
   }
 );
 
