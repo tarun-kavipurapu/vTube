@@ -59,7 +59,55 @@ const deletePlaylist = asyncHandler(
 );
 const updatePlaylist = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
+    const { playlistId } = req.params;
+    const { name, description } = req.body;
+    if (!name || !description) {
+      throw new ApiError(400, "Enter the name and description");
+    }
+    const playlist = await Playlist.findById(playlistId);
+
+    if (!playlist) {
+      throw new ApiError(400, "Playlist not found");
+    }
+    if (playlist?.owner.toString() !== req.user._id.toString()) {
+      throw new ApiError(
+        403,
+        "You don't have permission to add video in this playlist!"
+      );
+    }
+    playlist.name = name;
+    playlist.description = description;
+    const updatePlaylist = await playlist.save();
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          updatePlaylist,
+          "Playlist name and description updated"
+        )
+      );
+  }
+);
+const createPlaylist = asyncHandler(
+  async (req: IGetUserAuthInfoRequest, res: Response) => {
     const user = req.user._id;
+    const { name, description } = req.body;
+    if (!name || !description) {
+      throw new ApiError(400, "Enter the name and description");
+    }
+    const playlist = await Playlist.create({
+      name,
+      description,
+      owner: user,
+    });
+    if (!playlist) {
+      throw new ApiError(500, "Playlist not created");
+    }
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, playlist, "Sucessfully created the playlist"));
   }
 );
 
@@ -132,14 +180,6 @@ const addVideoToPlaylist = asyncHandler(
   }
 );
 
-const createPlaylist = asyncHandler(
-  async (req: IGetUserAuthInfoRequest, res: Response) => {
-    const user = req.user._id;
-    const { name, description } = req.body;
-    if (!name || !description) {
-      throw new ApiError(400, "Enter the name and description");
-  }
-);
 const removeVideFromPlaylist = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
     const { playlistId } = req.params;
