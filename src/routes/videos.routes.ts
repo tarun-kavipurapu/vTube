@@ -26,12 +26,12 @@ router
       },
     ]),
     uploadVideo
-  );
+  ); //!tested
 router
   .route("/:videoId")
-  .get(getVideoById)
+  .get(getVideoById) //!tested
   .delete(deleteById)
   .patch(upload.single("thumbnail"), updateThumbnail);
 
-router.route("/toggle/publish/:videoId").patch(togglePublishStatus);
+router.route("/toggle/publish/:videoId").patch(togglePublishStatus); //!tested
 export default router;
