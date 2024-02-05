@@ -3,6 +3,8 @@ import ApiError from "../utils/ApiError.js";
 import { Request, Response } from "express";
 import { Comment } from "../models/comments.models.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { Video } from "../models/videos.models.js";
+import mongoose from "mongoose";
 
 export interface IGetUserAuthInfoRequest extends Request {
   user: any; // or any other type
@@ -25,7 +27,7 @@ const getComments = asyncHandler(async (req: Request, res: Response) => {
   const comments = await Comment.aggregate([
     {
       $match: {
-        video: videoId,
+        video: new mongoose.Types.ObjectId(videoId),
       },
     },
     { $skip: (parsedPage - 1) * parsedLimit },
@@ -43,7 +45,7 @@ const getComments = asyncHandler(async (req: Request, res: Response) => {
 
   res
     .status(200)
-    .json(new ApiResponse(200, comments[0], "Sucessfully fetched comments"));
+    .json(new ApiResponse(200, comments, "Sucessfully fetched comments"));
 });
 const insertComment = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
@@ -55,6 +57,10 @@ const insertComment = asyncHandler(
 
     if (!videoId.trim()) {
       throw new ApiError(400, "videoId missing");
+    }
+    const video = await Video.findById(videoId);
+    if (!video) {
+      throw new ApiError(404, "No video found");
     }
     if (!content.trim()) {
       throw new ApiError(400, "Content missing");

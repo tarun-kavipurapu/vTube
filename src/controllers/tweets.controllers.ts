@@ -7,6 +7,7 @@ import { User } from "../models/users.models.js";
 export interface IGetUserAuthInfoRequest extends Request {
   user: any; // or any other type
 }
+import mongoose from "mongoose";
 
 const createTweet = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
@@ -18,8 +19,11 @@ const createTweet = asyncHandler(
       content,
       owner: req.user._id,
     });
+    if (!tweet) {
+      throw new ApiError(500, "Unable to create tweet");
+    }
 
-    res.status(200).json(new ApiResponse(200, "Tweet Created"));
+    res.status(200).json(new ApiResponse(200, tweet, "Tweet Created"));
   }
 );
 
@@ -100,7 +104,7 @@ const getUserTweets = asyncHandler(
     const tweet = await Tweet.aggregate([
       {
         $match: {
-          $owner: userId, //or user._id
+          owner: new mongoose.Types.ObjectId(userId), //or user._id
         },
       },
     ]);
@@ -111,7 +115,7 @@ const getUserTweets = asyncHandler(
 
     return res
       .status(200)
-      .json(new ApiResponse(200, tweet[0], "tweet retreived sucessfully"));
+      .json(new ApiResponse(200, tweet, "tweet retreived sucessfully"));
   }
 );
 export { createTweet, updateTweet, deleteTweet, getUserTweets };

@@ -13,7 +13,7 @@ import {
 router.use(verifyJWT);
 router
   .route("/")
-  .get(getAllVideos)
+  .get(getAllVideos) //?giving error
   .post(
     upload.fields([
       {
@@ -30,8 +30,8 @@ router
 router
   .route("/:videoId")
   .get(getVideoById) //!tested
-  .delete(deleteById)
-  .patch(upload.single("thumbnail"), updateThumbnail);
+  .delete(deleteById) //?test after deleteCLoudinary function
+  .patch(upload.single("thumbnail"), updateThumbnail); //?test after deleteCLoudinary function
 
 router.route("/toggle/publish/:videoId").patch(togglePublishStatus); //!tested
 export default router;

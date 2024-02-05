@@ -8,9 +8,9 @@ import {
 } from "../controllers/likes.controllers.js";
 const router = Router();
 router.use(verifyJWT);
-router.route("/l/:videoId").post(toggleVideoLike);
-router.route("/l/:commentId").post(toggleCommentLike);
-router.route("/l/:tweetId").post(toggleTweetLike);
-router.route("/liked").get(getLikedVideos);
+router.route("/l/v/:videoId").post(toggleVideoLike); //!tested
+router.route("/l/c/:commentId").post(toggleCommentLike); //!tested
+router.route("/l/t/:tweetId").post(toggleTweetLike); //!tested
+router.route("/liked").get(getLikedVideos); //!tested
 
 export default router;

@@ -11,10 +11,8 @@ const router = Router();
 //delete a tweet
 //update a tweet
 //lload the tweets
-router.route("/createTweet").post(verifyJWT, createTweet);
-router
-  .route("/t/:tweetId")
-  .delete(verifyJWT, deleteTweet)
-  .patch(verifyJWT, updateTweet);
-router.route("/user/:userId").get(verifyJWT, getUserTweets);
+router.use(verifyJWT);
+router.route("/createTweet").post(createTweet); //!tested
+router.route("/t/:tweetId").delete(deleteTweet).patch(updateTweet); //!tested
+router.route("/user/:userId").get(getUserTweets); //!tested
 export default router;

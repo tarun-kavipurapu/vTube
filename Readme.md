@@ -3,3 +3,6 @@
 # For refernce on how to intergrate typescript to mongooose and express refer to 
 `https://github.com/tomanagle/Mongoose-TypeScript-example/tree/master`
 
+### Tested Controller list
+
+### comments,tweets,videos(some),users,likes,Playlist,

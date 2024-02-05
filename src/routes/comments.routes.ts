@@ -9,8 +9,8 @@ import {
 } from "../controllers/comments.controllers.js";
 router.use(verifyJWT); //applyig for all the handlers in the routes
 
-router.route("/:videoId").get(getComments).post(insertComment);
+router.route("/:videoId").get(getComments).post(insertComment); //!tested
 
-router.route("/c/:commentId").delete(deleteComment).patch(updateComment);
+router.route("/c/:commentId").delete(deleteComment).patch(updateComment); //!tested
 
 export default router;

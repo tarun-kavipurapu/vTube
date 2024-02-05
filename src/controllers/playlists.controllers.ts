@@ -5,7 +5,8 @@ import { Playlist } from "../models/playlists.models.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import mongoose from "mongoose";
 import { Video } from "../models/videos.models.js";
-
+import { Mongoose } from "mongoose";
+import { User } from "../models/users.models.js";
 export interface IGetUserAuthInfoRequest extends Request {
   user: any; // or any other type
 }
@@ -39,7 +40,7 @@ const deletePlaylist = asyncHandler(
     if (!playlist) {
       throw new ApiError(500, "Playlsit not found in DB");
     }
-    if (playlist?.owner != req.user._id) {
+    if (playlist?.owner.toString() != req.user._id.toString()) {
       throw new ApiError(
         501,
         "You dont have authorization to delete the playlist"
@@ -61,7 +62,7 @@ const updatePlaylist = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
     const { playlistId } = req.params;
     const { name, description } = req.body;
-    if (!name || !description) {
+    if (!name && !description) {
       throw new ApiError(400, "Enter the name and description");
     }
     const playlist = await Playlist.findById(playlistId);
@@ -113,15 +114,18 @@ const createPlaylist = asyncHandler(
 
 const getUserPlaylists = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
-    const user = req.user._id;
     const { userId } = req.params;
     if (!userId) {
       throw new ApiError(401, "Enter the userID");
     }
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
     const playlist = await Playlist.aggregate([
       {
         $match: {
-          owner: new mongoose.Types.ObjectId(req.user._id),
+          owner: new mongoose.Types.ObjectId(userId),
         },
       },
     ]);
@@ -164,19 +168,16 @@ const addVideoToPlaylist = asyncHandler(
     if (!video) {
       throw new ApiError(404, "no video found!");
     }
-    const videoObject = new mongoose.Schema.Types.ObjectId(videoId);
+    const videoObject = new mongoose.Types.ObjectId(videoId);
 
     if (playlist.videos.includes(videoObject)) {
       throw new ApiError(400, "video already exists in this playlist!!");
     }
     const addVideo = playlist.videos.push(videoObject);
-
     await playlist.save();
     res
       .status(200)
-      .json(
-        new ApiResponse(200, playlist.videos, "Video added to the playlist")
-      );
+      .json(new ApiResponse(200, playlist, "Video added to the playlist"));
   }
 );
 
@@ -208,7 +209,7 @@ const removeVideFromPlaylist = asyncHandler(
     if (!video) {
       throw new ApiError(404, "no video found!");
     }
-    const videoObject = new mongoose.Schema.Types.ObjectId(videoId);
+    const videoObject = new mongoose.Types.ObjectId(videoId);
     if (!playlist.videos.includes(videoObject)) {
       throw new ApiError(400, "video does not  exists in this playlist!!");
     }
@@ -223,9 +224,7 @@ const removeVideFromPlaylist = asyncHandler(
 
     res
       .status(200)
-      .json(
-        new ApiResponse(200, playlist.videos, "Video added to the playlist")
-      );
+      .json(new ApiResponse(200, playlist, "Video removed from the playlist"));
   }
 );
 

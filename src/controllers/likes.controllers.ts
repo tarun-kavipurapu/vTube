@@ -13,90 +13,207 @@ export interface IGetUserAuthInfoRequest extends Request {
 
 const toggleVideoLike = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
-    const { videoId } = req.params;
-    if (!videoId) {
-    }
-    const video = await Video.findById(videoId);
-    if (!video) {
-    }
-    const toggleLike = await Like.findOne({
-      video: videoId,
-    });
-    let deleteLike;
-    let createLike;
-    if (toggleLike) {
-      //delete Like
-      deleteLike = await Like.deleteOne({
+    try {
+      const { videoId } = req.params;
+
+      if (!videoId) {
+        throw new ApiError(400, "videoId missing");
+      }
+
+      const video = await Video.findById(videoId);
+
+      if (!video) {
+        throw new ApiError(404, "Video not found");
+      }
+
+      const toggleLike = await Like.findOne({
         video: videoId,
       });
-    } else {
-      const createLike = await Like.create({
-        video: videoId,
-        likedBy: req.user._id,
-      });
+
+      let likeStatus;
+
+      if (toggleLike) {
+        // User has already liked the video, delete the like
+        const deleteLike = await Like.deleteOne({
+          video: videoId,
+          likedBy: req.user._id,
+        });
+
+        if (deleteLike.deletedCount === 0) {
+          throw new ApiError(500, "Failed to unlike the video");
+        }
+
+        likeStatus = false; // User unliked the video
+      } else {
+        // User has not liked the video, create a like
+        const createLike = await Like.create({
+          video: videoId,
+          likedBy: req.user._id,
+        });
+
+        if (!createLike) {
+          throw new ApiError(500, "Failed to like the video");
+        }
+
+        likeStatus = true; // User liked the video
+      }
+
+      res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { liked: likeStatus },
+            `${likeStatus ? "Liked" : "Unliked"}`
+          )
+        );
+    } catch (error) {
+      if (error instanceof ApiError) {
+        res
+          .status(error.statusCode)
+          .json(new ApiResponse(error.statusCode, error.message));
+      } else {
+        console.error(error);
+        res.status(500).json(new ApiResponse(500, "Internal Server Error"));
+      }
     }
-    res
-      .status(200)
-      .json(new ApiResponse(200, `${createLike ? "Liked" : "Unlike"}`));
   }
 );
+
 const toggleCommentLike = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
-    const { commentId } = req.params;
-    if (!commentId) {
-    }
-    const comment = await Comment.findById(commentId);
-    if (!comment) {
-    }
-    const toggleLike = await Like.findOne({
-      comment: commentId,
-    });
-    let deleteLike;
-    let createLike;
-    if (toggleLike) {
-      //delete Like
-      deleteLike = await Like.deleteOne({
+    try {
+      const { commentId } = req.params;
+
+      if (!commentId) {
+        throw new ApiError(400, "commentId missing");
+      }
+
+      const comment = await Comment.findById(commentId);
+
+      if (!comment) {
+        throw new ApiError(404, "Comment not found");
+      }
+
+      const toggleLike = await Like.findOne({
         comment: commentId,
       });
-    } else {
-      const createLike = await Like.create({
-        comment: commentId,
-        likedBy: req.user._id,
-      });
+
+      let likeStatus;
+
+      if (toggleLike) {
+        // User has already liked the comment, delete the like
+        const deleteLike = await Like.deleteOne({
+          comment: commentId,
+          likedBy: req.user._id,
+        });
+
+        if (deleteLike.deletedCount === 0) {
+          throw new ApiError(500, "Failed to unlike the comment");
+        }
+
+        likeStatus = false; // User unliked the comment
+      } else {
+        // User has not liked the comment, create a like
+        const createLike = await Like.create({
+          comment: commentId,
+          likedBy: req.user._id,
+        });
+
+        if (!createLike) {
+          throw new ApiError(500, "Failed to like the comment");
+        }
+
+        likeStatus = true; // User liked the comment
+      }
+
+      res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { liked: likeStatus },
+            `${likeStatus ? "Liked" : "Unliked"} the comment`
+          )
+        );
+    } catch (error) {
+      if (error instanceof ApiError) {
+        res
+          .status(error.statusCode)
+          .json(new ApiResponse(error.statusCode, error.message));
+      } else {
+        console.error(error);
+        res.status(500).json(new ApiResponse(500, "Internal Server Error"));
+      }
     }
-    res
-      .status(200)
-      .json(new ApiResponse(200, `${createLike ? "Liked" : "Unlike"}`));
   }
 );
 
 const toggleTweetLike = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
-    const { tweetId } = req.params;
-    if (!tweetId) {
-    }
-    const tweet = await Tweet.findById(tweetId);
-    if (!tweet) {
-    }
-    const toggleLike = await Like.findOne({
-      tweet: tweetId,
-    });
-    let deleteLike;
-    let createLike;
-    if (toggleLike) {
-      //delete Like
-      deleteLike = await Like.deleteOne({
+    try {
+      const { tweetId } = req.params;
+
+      if (!tweetId) {
+        throw new ApiError(400, "tweetId missing");
+      }
+
+      const tweet = await Tweet.findById(tweetId);
+
+      if (!tweet) {
+        throw new ApiError(404, "Tweet not found");
+      }
+
+      const toggleLike = await Like.findOne({
         tweet: tweetId,
       });
-    } else {
-      const createLike = await Like.create({
-        tweet: tweetId,
-        likedBy: req.user._id,
-      });
+
+      let likeStatus;
+
+      if (toggleLike) {
+        // User has already liked the tweet, delete the like
+        const deleteLike = await Like.deleteOne({
+          tweet: tweetId,
+        });
+
+        if (!deleteLike || deleteLike.deletedCount === 0) {
+          throw new ApiError(500, "Failed to unlike the tweet");
+        }
+
+        likeStatus = false; // User unliked the tweet
+      } else {
+        // User has not liked the tweet, create a like
+        const createLike = await Like.create({
+          tweet: tweetId,
+          likedBy: req.user._id,
+        });
+
+        if (!createLike) {
+          throw new ApiError(500, "Failed to like the tweet");
+        }
+
+        likeStatus = true; // User liked the tweet
+      }
+
+      res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { liked: likeStatus },
+            `${likeStatus ? "Liked" : "Unliked"} the tweet`
+          )
+        );
+    } catch (error) {
+      if (error instanceof ApiError) {
+        res
+          .status(error.statusCode)
+          .json(new ApiResponse(error.statusCode, error.message));
+      } else {
+        console.error(error);
+        res.status(500).json(new ApiResponse(500, "Internal Server Error"));
+      }
     }
-    res
-      .status(200)
-      .json(new ApiResponse(200, `${createLike ? "Liked" : "Unlike"}`));
   }
 );
 //you need info aboout like videos
@@ -106,12 +223,13 @@ const getLikedVideos = asyncHandler(
       {
         $match: {
           likedBy: new mongoose.Types.ObjectId(req.user._id),
+          video: { $exists: true },
         },
       },
       {
         $lookup: {
           from: "videos", // The collection to join with
-          localField: "likedBy", // The field from the input documents
+          localField: "video", // The field from the input documents
           foreignField: "_id", // The field from the documents of the "from" collection
           as: "likedVideos",
           pipeline: [
