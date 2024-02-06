@@ -1,3 +1,4 @@
+import { subscribe } from "diagnostics_channel";
 import { Subscribe } from "../models/subscription.models.js";
 import { User } from "../models/users.models.js";
 import ApiError from "../utils/ApiError.js";
@@ -10,126 +11,160 @@ export interface IGetUserAuthInfoRequest extends Request {
 }
 
 // controller to return channel list to which user has subscribed
-//user ne kis kis ko subscribe kiya
 const getSubscribedChannels = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
-    const { subscriberId } = req.params;
-    if (!subscriberId) {
-    }
-    const subscriptions = await Subscribe.aggregate([
-      {
-        $match: {
-          subscriber: new mongoose.Types.ObjectId(subscriberId),
-        },
-      },
-      {
-        $lookup: {
-          from: "users", // The collection to join with
-          localField: "channel", // The field from the input documents
-          foreignField: "_id", // The field from the documents of the "from" collection
-          as: "usersubscribedTo", // The name of the new array field to add to the input documents
-          pipeline: [
-            {
-              $project: {
-                fullname: 1,
-                username: 1,
-                avatar: 1,
-              },
-            },
-          ],
-        },
-      },
-      {
-        $addFields: {
-          subscribedChannelLists: {
-            $first: "$usersubscribedTo",
+    try {
+      const { subscriberId } = req.params;
+      // Check if subscriberId is provided
+      if (!subscriberId) {
+        throw new ApiError(400, "Subscriber ID is required");
+      }
+
+      // Retrieve subscriptions using aggregation pipeline
+      const subscriptions = await Subscribe.aggregate([
+        {
+          $match: {
+            subscriber: new mongoose.Types.ObjectId(subscriberId),
           },
         },
-      },
-    ]);
-    if (!subscriptions) {
-      throw new ApiError(404, "No subscriptions found");
+        {
+          $group: {
+            _id: "$subscriber",
+            subscribedChannels: {
+              $push: "$channel",
+            },
+          },
+        },
+        {
+          $project: {
+            subscribedChannels: 1,
+          },
+        },
+      ]);
+
+      // Check if subscriptions array is empty
+      if (subscriptions.length === 0) {
+        throw new ApiError(404, "No subscriptions found");
+      }
+
+      // Return subscribed channels in the response
+      res
+        .status(200)
+        .json(
+          new ApiResponse(200, subscriptions[0].subscribedChannels, "success")
+        );
+    } catch (error) {
+      // Handle errors
+      if (error instanceof ApiError) {
+        // If it's an expected API error, send the error response
+        res
+          .status(error.statusCode)
+          .json(new ApiResponse(error.statusCode, null, error.message));
+      } else {
+        // If it's an unexpected error, send a generic error response
+        console.error("An unexpected error occurred:", error);
+        res
+          .status(500)
+          .json(new ApiResponse(500, null, "Internal Server Error"));
+      }
     }
-    res.status(200).json(new ApiResponse(200, subscriptions[0], "success"));
-    //TODO:look further how to give better response
   }
 );
 
 const toggleSubcription = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
     const { channelId } = req.params;
+    if (!channelId) {
+      throw new ApiError(400, "Channel ID is required");
+    }
+    const user = await User.findById(channelId);
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
     const existingSubscription = await Subscribe.aggregate([
       {
         $match: {
-          channel: new mongoose.Types.ObjectId(req.user._id),
-          subscriber: new mongoose.Types.ObjectId(channelId),
+          channel: new mongoose.Types.ObjectId(channelId),
+          subscriber: new mongoose.Types.ObjectId(req.user._id),
         },
       },
     ]);
-    let subscribed;
-    let unSubscribe;
-    if (existingSubscription) {
-      unSubscribe = await Subscribe.deleteOne({
-        subscriber: channelId,
-        channel: req.user._id,
+
+    let subStatus;
+    if (existingSubscription.length) {
+      await Subscribe.deleteOne({
+        subscriber: req.user._id,
+        channel: channelId,
       });
+      subStatus = false;
     } else {
-      subscribed = await Subscribe.create({
-        subscriber: channelId,
-        channel: req.user._id,
+      await Subscribe.create({
+        subscriber: req.user._id,
+        channel: channelId,
       });
+      subStatus = true;
     }
+
     res
       .status(200)
       .json(
         new ApiResponse(
           200,
-          `${unSubscribe ? "unSubscribe" : "Subscribe"} successfully`
+          subStatus,
+          `${subStatus ? "Subscribed" : "Unsubscribed"} successfully`
         )
       );
   }
 );
+
 //channel ki subscriber list
 const getUserChannelSubscribers = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
-    const { channelId } = req.params;
-    if (!channelId) {
-    }
-    const user = await User.findById(channelId);
-    if (!user) {
-    }
+    try {
+      const { channelId } = req.params;
+      if (!channelId) {
+        throw new ApiError(400, "Channel ID is required");
+      }
 
-    const channel = await Subscribe.aggregate([
-      {
-        $match: {
-          channel: new mongoose.Types.ObjectId(channelId),
-        },
-      },
-      {
-        $lookup: {
-          from: "users", // The collection to join with
-          localField: "subscriber", // The field from the input documents
-          foreignField: "_id", // The field from the documents of the "from" collection
-          as: "channelSubscribers",
-          pipeline: [
-            {
-              $project: {
-                username: 1,
-                fullname: 1,
-                avatar: 1,
-              },
-            },
-          ],
-        },
-      },
-      {
-        $addFields: {
-          channelSubscribers: {
-            $first: "$channelSubscribers",
+      const user = await User.findById(channelId);
+      if (!user) {
+        throw new ApiError(404, "User not found");
+      }
+
+      const channel = await Subscribe.aggregate([
+        {
+          $match: {
+            channel: new mongoose.Types.ObjectId(channelId),
           },
         },
-      },
-    ]);
+        {
+          $group: {
+            _id: "$channel",
+            subscribers: {
+              $push: "$subscriber",
+            },
+          },
+        },
+        {
+          $project: {
+            subscribers: 1,
+          },
+        },
+      ]);
+
+      res.status(200).json(new ApiResponse(200, channel, "success"));
+    } catch (error) {
+      if (error instanceof ApiError) {
+        res
+          .status(error.statusCode)
+          .json(new ApiResponse(error.statusCode, null, error.message));
+      } else {
+        console.error("An unexpected error occurred:", error);
+        res
+          .status(500)
+          .json(new ApiResponse(500, null, "Internal Server Error"));
+      }
+    }
   }
 );
 

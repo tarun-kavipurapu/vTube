@@ -23,7 +23,7 @@ const getChannelVideos = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
     const user = req.user._id;
 
-    const videos = Video.findOne({ owner: user });
+    const videos = await Video.findOne({ owner: user });
 
     res.status(200).json(new ApiResponse(200, videos, "User Videos Obtained"));
   }
