@@ -1,4 +1,3 @@
-It seems like you want to update the README file for the Vtube project, adding instructions for environment variable setup and also including an `.env.example` file. Below is the updated README file:
 
 
 # Vtube
@@ -15,7 +14,6 @@ Vtube is a web application built with Node.js, Express, MongoDB, Zod, and Postma
   - [Usage](#usage)
   - [Verification](#verification)
   - [Contributing](#contributing)
-  - [License](#license)
 
 ## Introduction
 
@@ -90,12 +88,6 @@ Contributions are welcome! If you'd like to contribute to Vtube, please follow t
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin feature/YourFeature`)
 5. Create a new Pull Request
-
-## License
-
-[Your License Name or Link]
-
-Additionally, here's the content for the `.env.example` file:
 
 
 
