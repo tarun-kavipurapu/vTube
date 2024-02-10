@@ -1,4 +1,3 @@
-Certainly! Below is a basic template for a README file for your Vtube project using Node.js, Express, MongoDB, Zod, Git, and Postman:
 
 ---
 
@@ -27,6 +26,7 @@ Vtube is a video-sharing platform where users can upload, view, and interact wit
 - Like/dislike videos
 - Commenting on videos
 - User profile management
+- Cloud storage of videos and images
 
 ## Installation
 
@@ -67,14 +67,11 @@ Vtube is a video-sharing platform where users can upload, view, and interact wit
 
 Once the server is running, you can access the application at `http://localhost:3000` in your web browser.
 
-### API Endpoints
 
-- `/videos` - Get all videos
-- `/videos/:id` - Get a specific video by ID
-- `/videos/upload` - Upload a new video
-- `/videos/:id/like` - Like a video
-- `/videos/:id/dislike` - Dislike a video
-- `/videos/:id/comment` - Add a comment to a video
+
+## Verification
+Checkout the postman collection to verify the endpoints
+
 
 ## Contributing
 
@@ -88,7 +85,6 @@ Contributions are welcome! If you'd like to contribute to Vtube, please follow t
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
