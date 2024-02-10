@@ -32,12 +32,11 @@ const cloudinaryFileUpload = async function (localFilePath: string) {
 };
 
 const cloudinaryFileDelete = async function (
-  url: string,
+  publicId: string,
   resource_type: string
 ) {
   try {
-    if (!url) return null;
-    const publicId = extractPublicId(url);
+    if (!publicId) return null;
     const response = cloudinary.api
       .delete_resources([`${publicId}`], {
         type: "upload",

@@ -9,12 +9,14 @@ import {
   cloudinaryFileDelete,
 } from "../utils/cloudinary.js";
 
+import { extractPublicId } from "cloudinary-build-url";
+
 export interface IGetUserAuthInfoRequest extends Request {
   user: any; // or any other type
 }
 interface VideoQuery {
   page?: number;
-  limit?: string;
+  limit?: number;
   query?: any;
   sortBy?: string;
   sortType?: any;
@@ -39,7 +41,6 @@ const getVideoById = asyncHandler(
       .json(new ApiResponse(200, video, "Fetched  Video Sucessfullly"));
   }
 );
-//TODO: create a cloudinary function which deletes the videos and thumnail in cloudinary
 const deleteById = asyncHandler(
   //check ownership
   async (req: IGetUserAuthInfoRequest, res: Response) => {
@@ -59,16 +60,18 @@ const deleteById = asyncHandler(
       );
     }
 
-    const cloudinaryDelete = await cloudinaryFileDelete(
-      video?.videoFile,
-      "video"
-    );
+    const videoPublicId = extractPublicId(video?.videoFile);
+    const thumbPublicId = extractPublicId(video?.thumbnail);
+
+    const cloudinaryDelete = await cloudinaryFileDelete(videoPublicId, "video");
     const cloudinaryThumbDelete = await cloudinaryFileDelete(
-      video?.thumbnail,
+      thumbPublicId,
       "image"
     );
-    console.log("cloudinaryDelete", cloudinaryDelete);
-    if (cloudinaryDelete === undefined && cloudinaryThumbDelete === undefined) {
+    if (
+      cloudinaryDelete?.[videoPublicId] === "not_found" &&
+      cloudinaryThumbDelete?.[videoPublicId] === "not_found"
+    ) {
       throw new ApiError(
         500,
         "Error while deleting video or thumbnail from cloudinary"
@@ -88,7 +91,50 @@ const deleteById = asyncHandler(
 );
 //TODO: create a cloudinary function which deletes the videos and thumnail in cloudinary
 const updateThumbnail = asyncHandler(
-  async (req: IGetUserAuthInfoRequest, res: Response) => {}
+  async (req: IGetUserAuthInfoRequest, res: Response) => {
+    const { videoId } = req.params;
+    if (!videoId) {
+      throw new ApiError(400, "Video Id is not given");
+    }
+    const video = await Video.findById(videoId);
+
+    if (!video) {
+      throw new ApiError(404, "Error while fetching video");
+    }
+    if (video?.owner.toString() !== req.user._id.toString()) {
+      throw new ApiError(
+        403,
+        "You don't have permission to update thumbnail of this video!"
+      );
+    }
+
+    const thumbPublicId = extractPublicId(video?.thumbnail);
+    const cloudinaryThumbDelete = await cloudinaryFileDelete(
+      thumbPublicId,
+      "image"
+    );
+    if (cloudinaryThumbDelete?.[thumbPublicId] === "not_found") {
+      throw new ApiError(500, "Error while deleting thumbnail from cloudinary");
+    }
+
+    const thumbnailLocalPath = (
+      req.files as { [fieldname: string]: Express.Multer.File[] }
+    )?.thumbnail[0]?.path;
+    if (!thumbnailLocalPath) {
+      throw new ApiError(400, "thumnail File not available on multer");
+    }
+
+    const thumbnail = await cloudinaryFileUpload(thumbnailLocalPath);
+    if (!thumbnail?.url) {
+      throw new ApiError(400, "thumbnail not uploaded on cloudinary");
+    }
+    video.thumbnail = thumbnail.url;
+    await video.save();
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, video, "Thumbnail updated Sucessfullly"));
+  }
 );
 const uploadVideo = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
@@ -142,50 +188,50 @@ const getAllVideos = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
     const {
       page = 1,
-      limit = "10",
+      limit = 10,
       query,
       sortBy,
       sortType = 1,
       userId = req.user._id,
     }: VideoQuery = req.query as VideoQuery;
 
-    const video = await Video.aggregate([
-      {
-        $match: {
-          owner: new mongoose.Types.ObjectId(userId),
-          $or: [
-            { title: { $regex: query, $options: "i" } },
-            { description: { $regex: query, $options: "i" } },
-          ],
+    try {
+      const matchQuery = {
+        owner: new mongoose.Types.ObjectId(userId),
+        $or: [
+          { title: { $regex: query, $options: "i" } },
+          { description: { $regex: query, $options: "i" } },
+        ],
+      };
+
+      const sortQuery = {
+        [sortBy || "createdAt"]: sortType === "desc" ? -1 : 1,
+      };
+
+      const options = {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        customLabels: {
+          docs: "videos",
+          totalDocs: "totalVideos",
         },
-      },
-      {
-        $sort: {
-          [sortBy || "createdAt"]: sortType === "desc" ? -1 : 1,
-        },
-      },
-      {
-        $skip: (page - 1) * parseInt(limit),
-      },
-      {
-        $limit: parseInt(limit),
-      },
-    ]);
-    //@ts-ignore
-    Video.aggregatePaginate(video, { page, limit })
-      .then((result: any) => {
-        return res
-          .status(200)
-          .json(
-            new ApiResponse(200, result, "fetched all videos successfully !!")
-          );
-      })
-      .catch((error: any) => {
-        console.log("getting error while fetching all videos:", error);
-        throw error;
-      });
+      };
+
+      const result = await Video.aggregatePaginate(
+        [{ $match: matchQuery }, { $sort: sortQuery }],
+        options
+      );
+
+      res
+        .status(200)
+        .json(new ApiResponse(200, result, "Fetched all videos successfully!"));
+    } catch (error) {
+      console.log("Error while fetching all videos:", error);
+      throw new ApiError(500, "Error while fetching all videos");
+    }
   }
 );
+
 const togglePublishStatus = asyncHandler(
   async (req: IGetUserAuthInfoRequest, res: Response) => {
     const { videoId } = req.params;
