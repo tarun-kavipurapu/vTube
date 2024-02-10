@@ -73,8 +73,9 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
   }
   let coverImageLocalPath;
   if (
-    req.files &&
+    req.files && //@ts-ignore
     Array.isArray(req.files.coverImage) &&
+    //@ts-ignore
     req.files.coverImage.length > 0
   ) {
     coverImageLocalPath = (
@@ -82,6 +83,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     )?.coverImage[0]?.path;
   }
   const avatar = await cloudinaryFileUpload(avatarLocalPath);
+  //@ts-ignore
   const coverImage = await cloudinaryFileUpload(coverImageLocalPath);
 
   if (!avatar) {
@@ -210,8 +212,10 @@ const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
   if (!refreshTokenFromUser) {
     throw new ApiError(401, "Refresh tokenn not provided");
   }
+
   const decodedObject = jwt.verify(
     refreshTokenFromUser,
+    //@ts-ignore
     process.env.REFRESH_TOKEN_SECRET
   ); //this is payload section in generate jwt section
 

@@ -4,7 +4,10 @@ import ApiError from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Request, Response } from "express";
-import { cloudinaryFileUpload } from "../utils/cloudinary.js";
+import {
+  cloudinaryFileUpload,
+  cloudinaryFileDelete,
+} from "../utils/cloudinary.js";
 
 export interface IGetUserAuthInfoRequest extends Request {
   user: any; // or any other type
@@ -25,7 +28,6 @@ const getVideoById = asyncHandler(
       throw new ApiError(400, "Video Id is not given");
     }
     const video = await Video.findById(videoId);
-
     if (!video) {
       throw new ApiError(404, "Error while fetching video");
     }
@@ -56,14 +58,32 @@ const deleteById = asyncHandler(
         "You don't have permission to delete this video!"
       );
     }
-    const videoDelete = await Video.findByIdAndDelete(videoId);
 
+    const cloudinaryDelete = await cloudinaryFileDelete(
+      video?.videoFile,
+      "video"
+    );
+    const cloudinaryThumbDelete = await cloudinaryFileDelete(
+      video?.thumbnail,
+      "image"
+    );
+    console.log("cloudinaryDelete", cloudinaryDelete);
+    if (cloudinaryDelete === undefined && cloudinaryThumbDelete === undefined) {
+      throw new ApiError(
+        500,
+        "Error while deleting video or thumbnail from cloudinary"
+      );
+    }
+
+    const videoDelete = await Video.findByIdAndDelete(videoId);
+    //delete in cloudinary
     if (!videoDelete) {
       throw new ApiError(500, "Video not deleted");
     }
+
     res
       .status(200)
-      .json(new ApiResponse(200, videoDelete, "Fetched  Video Sucessfullly"));
+      .json(new ApiResponse(200, videoDelete, "deleted  Video Sucessfullly"));
   }
 );
 //TODO: create a cloudinary function which deletes the videos and thumnail in cloudinary
@@ -151,6 +171,7 @@ const getAllVideos = asyncHandler(
         $limit: parseInt(limit),
       },
     ]);
+    //@ts-ignore
     Video.aggregatePaginate(video, { page, limit })
       .then((result: any) => {
         return res

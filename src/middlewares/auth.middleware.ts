@@ -25,7 +25,7 @@ export const verifyJWT = asyncHandler(
     if (!token) {
       throw new ApiError(401, "Invalid Acess token");
     }
-
+    //@ts-ignore
     const decodedObject = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
     const user = await User.findById(decodedObject._id).select(

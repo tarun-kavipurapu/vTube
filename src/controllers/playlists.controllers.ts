@@ -169,10 +169,11 @@ const addVideoToPlaylist = asyncHandler(
       throw new ApiError(404, "no video found!");
     }
     const videoObject = new mongoose.Types.ObjectId(videoId);
-
+    //@ts-ignore
     if (playlist.videos.includes(videoObject)) {
       throw new ApiError(400, "video already exists in this playlist!!");
     }
+    //@ts-ignore
     const addVideo = playlist.videos.push(videoObject);
     await playlist.save();
     res
@@ -210,10 +211,11 @@ const removeVideFromPlaylist = asyncHandler(
       throw new ApiError(404, "no video found!");
     }
     const videoObject = new mongoose.Types.ObjectId(videoId);
+    //@ts-ignore
     if (!playlist.videos.includes(videoObject)) {
       throw new ApiError(400, "video does not  exists in this playlist!!");
     }
-
+    //@ts-ignore
     const index = playlist.videos.indexOf(videoObject);
 
     if (index > -1) {
